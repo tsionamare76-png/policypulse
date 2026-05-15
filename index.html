@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Policy Pulse — Methane & AI Monitor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0d0f0e; --surface: #161918; --surface2: #1e2220;
+      --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.12);
+      --text: #e8ede9; --text2: #8a9b8e; --text3: #5a6b5e;
+      --teal: #3ecf8e; --teal-dim: rgba(62,207,142,0.12); --teal-border: rgba(62,207,142,0.25);
+      --blue: #60a5fa; --blue-dim: rgba(96,165,250,0.1); --blue-border: rgba(96,165,250,0.25);
+      --amber: #f59e0b; --red: #f87171;
+    }
+    body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.6; }
+    body::before {
+      content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background-image:
+        radial-gradient(ellipse 80% 50% at 20% -10%, rgba(62,207,142,0.06) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 110%, rgba(96,165,250,0.05) 0%, transparent 55%);
+    }
+    .wrap { max-width: 860px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+    header { padding: 48px 0 32px; border-bottom: 1px solid var(--border); }
+    .masthead { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+    .brand { display: flex; flex-direction: column; gap: 6px; }
+    .brand-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.15em; text-transform: uppercase; color: var(--teal); display: flex; align-items: center; gap: 8px; }
+    .brand-eyebrow::before { content: ''; width: 24px; height: 1px; background: var(--teal); }
+    .brand h1 { font-family: 'DM Serif Display', serif; font-size: clamp(28px, 5vw, 42px); font-weight: 400; line-height: 1.1; letter-spacing: -0.02em; }
+    .brand h1 em { font-style: italic; color: var(--teal); }
+    .brand-sub { font-size: 14px; color: var(--text2); margin-top: 4px; }
+    .header-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+    #lastUpdated { font-size: 12px; color: var(--text3); text-align: right; }
+    .refresh-btn { display: flex; align-items: center; gap: 8px; padding: 9px 20px; background: var(--teal-dim); border: 1px solid var(--teal-border); border-radius: 8px; color: var(--teal); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+    .refresh-btn:hover { background: rgba(62,207,142,0.2); }
+    .refresh-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .refresh-btn svg { width: 14px; height: 14px; }
+    .refresh-btn.spinning svg { animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .status-bar { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; font-size: 13px; color: var(--text2); margin: 24px 0; }
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .dot-loading { background: var(--amber); animation: pulse 1.2s ease-in-out infinite; }
+    .dot-ready { background: var(--teal); box-shadow: 0 0 6px rgba(62,207,142,0.5); }
+    .dot-error { background: var(--red); }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 28px; }
+    .filter-pill { display: flex; align-items: center; gap: 6px; padding: 6px 16px; border-radius: 999px; font-size: 13px; cursor: pointer; border: 1px solid var(--border2); background: var(--surface); color: var(--text2); transition: all 0.15s; user-select: none; }
+    .filter-pill:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
+    .filter-pill.active-all { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.2); color: var(--text); }
+    .filter-pill.active-methane { background: var(--teal-dim); border-color: var(--teal-border); color: var(--teal); }
+    .filter-pill.active-ai { background: var(--blue-dim); border-color: var(--blue-border); color: var(--blue); }
+    .pill-dot { width: 6px; height: 6px; border-radius: 50%; }
+    .dot-m { background: var(--teal); } .dot-a { background: var(--blue); } .dot-all { background: var(--text2); }
+    .section-label { display: flex; align-items: center; gap: 10px; font-size: 11px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text3); margin: 32px 0 16px; }
+    .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .section-label.methane-label { color: var(--teal); }
+    .section-label.ai-label { color: var(--blue); }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px 22px; margin-bottom: 12px; transition: border-color 0.2s, background 0.2s; animation: fadeUp 0.4s ease both; }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+    .card:hover { border-color: var(--border2); background: var(--surface2); }
+    .card-top { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+    .badge { font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 999px; }
+    .badge-methane { background: var(--teal-dim); color: var(--teal); border: 1px solid var(--teal-border); }
+    .badge-ai { background: var(--blue-dim); color: var(--blue); border: 1px solid var(--blue-border); }
+    .badge-level { font-size: 11px; padding: 3px 10px; border-radius: 999px; background: rgba(255,255,255,0.04); color: var(--text3); border: 1px solid var(--border); }
+    .card-title { font-family: 'DM Serif Display', serif; font-size: 17px; font-weight: 400; color: var(--text); line-height: 1.35; margin-bottom: 8px; }
+    .card-summary { font-size: 14px; color: var(--text2); line-height: 1.65; margin-bottom: 14px; }
+    .card-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .card-source { font-size: 12px; color: var(--blue); text-decoration: none; display: flex; align-items: center; gap: 5px; }
+    .card-source:hover { text-decoration: underline; }
+    .card-date { font-size: 12px; color: var(--text3); }
+    .empty { text-align: center; padding: 60px 20px; }
+    .empty p { font-size: 14px; color: var(--text2); line-height: 1.7; }
+    .skeleton { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px 22px; margin-bottom: 12px; }
+    .skel-line { height: 12px; border-radius: 6px; background: linear-gradient(90deg, var(--surface2) 0%, rgba(255,255,255,0.04) 50%, var(--surface2) 100%); background-size: 200% 100%; animation: shimmer 1.6s infinite; margin-bottom: 10px; }
+    @keyframes shimmer { to { background-position: -200% 0; } }
+    .stats-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 28px; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; text-align: center; }
+    .stat-num { font-family: 'DM Serif Display', serif; font-size: 28px; color: var(--text); line-height: 1; margin-bottom: 4px; }
+    .stat-label { font-size: 12px; color: var(--text3); }
+    footer { border-top: 1px solid var(--border); padding: 28px 0 40px; margin-top: 48px; }
+    .footer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .footer-block h4 { font-size: 12px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3); margin-bottom: 10px; }
+    .footer-block p, .footer-block li { font-size: 13px; color: var(--text2); line-height: 1.7; }
+    .footer-block ul { list-style: none; }
+    .footer-block ul li::before { content: '→ '; color: var(--text3); }
+    .footer-bottom { margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text3); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+    @media (max-width: 600px) { header { padding: 32px 0 24px; } .masthead { flex-direction: column; } .header-actions { align-items: flex-start; } #lastUpdated { text-align: left; } .stats-row { grid-template-columns: 1fr; } .footer-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="masthead">
+      <div class="brand">
+        <div class="brand-eyebrow">Daily Policy Intelligence</div>
+        <h1>Policy <em>Pulse</em></h1>
+        <p class="brand-sub">Federal &amp; state headlines · Methane · AI &amp; Datacenters</p>
+      </div>
+      <div class="header-actions">
+        <span id="lastUpdated">Loading…</span>
+        <button class="refresh-btn" id="refreshBtn" onclick="fetchNews(true)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+            <path d="M21 3v5h-5"/>
+            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+            <path d="M8 16H3v5"/>
+          </svg>
+          Refresh briefing
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="status-bar">
+    <div class="status-dot dot-loading" id="statusDot"></div>
+    <span id="statusText">Fetching today's policy headlines…</span>
+  </div>
+
+  <div class="stats-row" id="statsRow" style="display:none;">
+    <div class="stat-card"><div class="stat-num" id="statTotal">0</div><div class="stat-label">Total headlines</div></div>
+    <div class="stat-card"><div class="stat-num" id="statMethane" style="color:var(--teal)">0</div><div class="stat-label">Methane stories</div></div>
+    <div class="stat-card"><div class="stat-num" id="statAI" style="color:var(--blue)">0</div><div class="stat-label">AI &amp; datacenter stories</div></div>
+  </div>
+
+  <div class="filters" id="filtersRow" style="display:none;">
+    <div class="filter-pill active-all" id="pill-all" onclick="filterTopic('all')"><span class="pill-dot dot-all"></span> All topics</div>
+    <div class="filter-pill" id="pill-methane" onclick="filterTopic('methane')"><span class="pill-dot dot-m"></span> Methane &amp; emissions</div>
+    <div class="filter-pill" id="pill-ai" onclick="filterTopic('ai')"><span class="pill-dot dot-a"></span> AI &amp; datacenters</div>
+  </div>
+
+  <div id="resultsArea">
+    <div class="skeleton"><div class="skel-line" style="width:30%;margin-bottom:14px;"></div><div class="skel-line" style="width:80%;height:16px;"></div><div class="skel-line" style="width:90%;"></div><div class="skel-line" style="width:55%;"></div></div>
+    <div class="skeleton"><div class="skel-line" style="width:25%;margin-bottom:14px;"></div><div class="skel-line" style="width:75%;height:16px;"></div><div class="skel-line" style="width:85%;"></div><div class="skel-line" style="width:50%;"></div></div>
+    <div class="skeleton"><div class="skel-line" style="width:28%;margin-bottom:14px;"></div><div class="skel-line" style="width:82%;height:16px;"></div><div class="skel-line" style="width:70%;"></div><div class="skel-line" style="width:60%;"></div></div>
+  </div>
+</div>
+
+<div class="wrap">
+  <footer>
+    <div class="footer-grid">
+      <div class="footer-block">
+        <h4>About this monitor</h4>
+        <p>Policy Pulse uses Claude AI with live web search to surface current federal and state actions on methane emissions and AI/datacenter regulation. Auto-fetches on every page load, caches for 3 hours.</p>
+      </div>
+      <div class="footer-block">
+        <h4>Push notifications</h4>
+        <ul>
+          <li>Sign up at <strong>make.com</strong> (free)</li>
+          <li>Schedule a daily trigger at your preferred time</li>
+          <li>Add a web search step for policy keywords</li>
+          <li>Push to phone via <strong>ntfy.sh</strong> or <strong>Pushover</strong></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>Policy Pulse · Powered by Claude AI</span>
+      <span id="footerDate"></span>
+    </div>
+  </footer>
+</div>
+
+<script>
+  let allArticles = [];
+  let currentFilter = 'all';
+  const CACHE_KEY = 'policypulse_v3';
+  const CACHE_TTL = 3 * 60 * 60 * 1000;
+
+  document.getElementById('footerDate').textContent = new Date().toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+  function setStatus(type, text) {
+    document.getElementById('statusDot').className = 'status-dot dot-' + type;
+    document.getElementById('statusText').textContent = text;
+  }
+
+  function filterTopic(topic) {
+    currentFilter = topic;
+    ['all','methane','ai'].forEach(t => {
+      const p = document.getElementById('pill-' + t);
+      p.className = 'filter-pill';
+      if (t === topic) p.classList.add(t === 'methane' ? 'active-methane' : t === 'ai' ? 'active-ai' : 'active-all');
+    });
+    renderArticles();
+  }
+
+  function cardHTML(a, delay) {
+    const isMethane = a.topic === 'methane';
+    const sourceEl = a.url
+      ? `<a class="card-source" href="${a.url}" target="_blank" rel="noopener">
+           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+           ${a.source}
+         </a>`
+      : `<span class="card-date">${a.source}</span>`;
+    return `<div class="card" style="animation-delay:${delay * 60}ms">
+      <div class="card-top">
+        <span class="badge ${isMethane ? 'badge-methane' : 'badge-ai'}">${isMethane ? 'Methane' : 'AI / Datacenters'}</span>
+        <span class="badge-level">${a.level}</span>
+      </div>
+      <div class="card-title">${a.title}</div>
+      <div class="card-summary">${a.summary}</div>
+      <div class="card-footer">${sourceEl}<span class="card-date">${a.date}</span></div>
+    </div>`;
+  }
+
+  function renderArticles() {
+    const area = document.getElementById('resultsArea');
+    if (!allArticles.length) return;
+    const filtered = currentFilter === 'all' ? allArticles : allArticles.filter(a => a.topic === currentFilter);
+    if (!filtered.length) { area.innerHTML = '<div class="empty"><p>No headlines found for this topic today.</p></div>'; return; }
+    const methane = filtered.filter(a => a.topic === 'methane');
+    const ai = filtered.filter(a => a.topic === 'ai');
+    let html = '';
+    if (methane.length && ai.length) {
+      html += '<div class="section-label methane-label">Methane &amp; Emissions</div>' + methane.map((a,i) => cardHTML(a,i)).join('');
+      html += '<div class="section-label ai-label">AI &amp; Datacenters</div>' + ai.map((a,i) => cardHTML(a, methane.length+i)).join('');
+    } else {
+      html = filtered.map((a,i) => cardHTML(a,i)).join('');
+    }
+    area.innerHTML = html;
+  }
+
+  function updateStats(articles) {
+    document.getElementById('statTotal').textContent = articles.length;
+    document.getElementById('statMethane').textContent = articles.filter(a => a.topic === 'methane').length;
+    document.getElementById('statAI').textContent = articles.filter(a => a.topic === 'ai').length;
+    document.getElementById('statsRow').style.display = 'grid';
+    document.getElementById('filtersRow').style.display = 'flex';
+  }
+
+  async function fetchNews(forceRefresh) {
+    if (!forceRefresh) {
+      try {
+        const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+        if (cached && (Date.now() - cached.ts < CACHE_TTL) && cached.articles.length) {
+          allArticles = cached.articles;
+          updateStats(allArticles);
+          renderArticles();
+          const ago = Math.round((Date.now() - cached.ts) / 60000);
+          setStatus('ready', `Cached briefing from ${ago} min ago — click Refresh for latest`);
+          document.getElementById('lastUpdated').textContent = 'Cached: ' + new Date(cached.ts).toLocaleTimeString();
+          return;
+        }
+      } catch(e) {}
+    }
+
+    const btn = document.getElementById('refreshBtn');
+    btn.disabled = true;
+    btn.classList.add('spinning');
+    setStatus('loading', 'Searching for today\'s federal and state policy headlines…');
+    document.getElementById('lastUpdated').textContent = 'Fetching…';
+
+    try {
+      const resp = await fetch('/.netlify/functions/fetch-news');
+
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.error || `Server returned ${resp.status}`);
+      }
+
+      const articles = await resp.json();
+      allArticles = Array.isArray(articles) ? articles : [];
+
+      if (allArticles.length) {
+        try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), articles: allArticles })); } catch(e) {}
+      }
+
+      const now = new Date();
+      document.getElementById('lastUpdated').textContent = 'Updated: ' + now.toLocaleTimeString();
+      updateStats(allArticles);
+
+      if (!allArticles.length) {
+        setStatus('ready', 'No major policy headlines found in the past 48 hours');
+        document.getElementById('resultsArea').innerHTML = '<div class="empty"><p>No major federal or state policy activity found today.<br>Check back tomorrow or click Refresh.</p></div>';
+        document.getElementById('statsRow').style.display = 'none';
+      } else {
+        setStatus('ready', `Found ${allArticles.length} headline${allArticles.length !== 1 ? 's' : ''} · ${now.toLocaleTimeString()}`);
+        renderArticles();
+      }
+
+    } catch(err) {
+      setStatus('error', 'Could not fetch headlines — ' + (err.message || 'unknown error'));
+      document.getElementById('lastUpdated').textContent = 'Fetch failed';
+      document.getElementById('resultsArea').innerHTML = `<div class="empty"><p>Something went wrong.<br><span style="color:var(--red);font-size:12px;">${err.message}</span><br><br>Click Refresh to try again.</p></div>`;
+    }
+
+    btn.disabled = false;
+    btn.classList.remove('spinning');
+  }
+
+  fetchNews(false);
+</script>
+</body>
+</html>
