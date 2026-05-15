@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Policy Pulse — Energy & AI Monitor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0d0f0e; --surface: #161918; --surface2: #1e2220;
+      --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.13);
+      --text: #e8ede9; --text2: #8a9b8e; --text3: #5a6b5e;
+      --teal: #3ecf8e; --teal-dim: rgba(62,207,142,0.11); --teal-border: rgba(62,207,142,0.28);
+      --blue: #60a5fa; --blue-dim: rgba(96,165,250,0.10); --blue-border: rgba(96,165,250,0.28);
+      --amber: #f59e0b; --amber-dim: rgba(245,158,11,0.10); --amber-border: rgba(245,158,11,0.28);
+      --orange: #fb923c; --orange-dim: rgba(251,146,60,0.10); --orange-border: rgba(251,146,60,0.28);
+      --green: #4ade80; --green-dim: rgba(74,222,128,0.10); --green-border: rgba(74,222,128,0.28);
+      --purple: #c084fc; --purple-dim: rgba(192,132,252,0.10); --purple-border: rgba(192,132,252,0.28);
+      --red: #f87171;
+    }
+    body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.6; }
+    body::before { content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+      background-image: radial-gradient(ellipse 80% 50% at 20% -10%, rgba(62,207,142,0.05) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 110%, rgba(96,165,250,0.04) 0%, transparent 55%); }
+    .wrap { max-width: 900px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+    /* header */
+    header { padding: 40px 0 28px; border-bottom: 1px solid var(--border); }
+    .masthead { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; flex-wrap:wrap; }
+    .brand { display:flex; flex-direction:column; gap:5px; }
+    .brand-eyebrow { font-size:11px; font-weight:500; letter-spacing:0.15em; text-transform:uppercase; color:var(--teal); display:flex; align-items:center; gap:8px; }
+    .brand-eyebrow::before { content:''; width:20px; height:1px; background:var(--teal); }
+    .brand h1 { font-family:'DM Serif Display',serif; font-size:clamp(26px,4.5vw,40px); font-weight:400; line-height:1.1; letter-spacing:-0.02em; }
+    .brand h1 em { font-style:italic; color:var(--teal); }
+    .brand-sub { font-size:13px; color:var(--text2); margin-top:3px; }
+    .header-right { display:flex; flex-direction:column; align-items:flex-end; gap:8px; }
+    #lastUpdated { font-size:12px; color:var(--text3); text-align:right; }
+    .refresh-btn { display:flex; align-items:center; gap:7px; padding:8px 18px; background:var(--teal-dim); border:1px solid var(--teal-border); border-radius:8px; color:var(--teal); font-family:'DM Sans',sans-serif; font-size:13px; font-weight:500; cursor:pointer; transition:all 0.2s; white-space:nowrap; }
+    .refresh-btn:hover { background:rgba(62,207,142,0.2); }
+    .refresh-btn:disabled { opacity:0.4; cursor:not-allowed; }
+    .refresh-btn svg { width:13px; height:13px; }
+    .refresh-btn.spinning svg { animation:spin 1s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    /* nav tabs */
+    .nav-tabs { display:flex; gap:4px; margin: 28px 0 0; border-bottom: 1px solid var(--border); }
+    .nav-tab { padding:10px 20px; font-size:13px; font-weight:500; color:var(--text2); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; transition:all 0.15s; user-select:none; display:flex; align-items:center; gap:7px; }
+    .nav-tab:hover { color:var(--text); }
+    .nav-tab.active { color:var(--text); border-bottom-color:var(--teal); }
+    .nav-tab svg { width:14px; height:14px; }
+
+    /* tab panels */
+    .tab-panel { display:none; padding-top:28px; }
+    .tab-panel.active { display:block; }
+
+    /* status */
+    .status-bar { display:flex; align-items:center; gap:10px; padding:11px 15px; background:var(--surface); border:1px solid var(--border); border-radius:10px; font-size:13px; color:var(--text2); margin-bottom:24px; }
+    .status-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+    .dot-loading { background:var(--amber); animation:pulse 1.2s ease-in-out infinite; }
+    .dot-ready { background:var(--teal); box-shadow:0 0 6px rgba(62,207,142,0.5); }
+    .dot-error { background:var(--red); }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    /* stats */
+    .stats-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; margin-bottom:24px; }
+    .stat-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:12px 14px; text-align:center; }
+    .stat-num { font-family:'DM Serif Display',serif; font-size:26px; color:var(--text); line-height:1; margin-bottom:3px; }
+    .stat-label { font-size:11px; color:var(--text3); }
+
+    /* topic filters */
+    .filters { display:flex; gap:7px; flex-wrap:wrap; margin-bottom:26px; }
+    .filter-pill { display:flex; align-items:center; gap:5px; padding:5px 13px; border-radius:999px; font-size:12px; cursor:pointer; border:1px solid var(--border2); background:var(--surface); color:var(--text2); transition:all 0.15s; user-select:none; }
+    .filter-pill:hover { color:var(--text); border-color:rgba(255,255,255,0.2); }
+    .filter-pill.active { font-weight:500; }
+    .filter-pill.f-all.active    { background:rgba(255,255,255,0.06); border-color:rgba(255,255,255,0.2); color:var(--text); }
+    .filter-pill.f-methane.active { background:var(--teal-dim); border-color:var(--teal-border); color:var(--teal); }
+    .filter-pill.f-ai.active      { background:var(--blue-dim); border-color:var(--blue-border); color:var(--blue); }
+    .filter-pill.f-texas.active   { background:var(--amber-dim); border-color:var(--amber-border); color:var(--amber); }
+    .filter-pill.f-grid.active    { background:var(--orange-dim); border-color:var(--orange-border); color:var(--orange); }
+    .filter-pill.f-clean.active   { background:var(--green-dim); border-color:var(--green-border); color:var(--green); }
+    .filter-pill.f-oilgas.active  { background:var(--purple-dim); border-color:var(--purple-border); color:var(--purple); }
+    .pdot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+
+    /* section labels */
+    .section-label { display:flex; align-items:center; gap:10px; font-size:11px; font-weight:500; letter-spacing:0.12em; text-transform:uppercase; margin:28px 0 14px; }
+    .section-label::after { content:''; flex:1; height:1px; background:var(--border); }
+
+    /* news cards */
+    .card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:18px 20px; margin-bottom:10px; transition:border-color 0.2s,background 0.2s; animation:fadeUp 0.35s ease both; }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+    .card:hover { border-color:var(--border2); background:var(--surface2); }
+    .card-top { display:flex; align-items:center; gap:7px; margin-bottom:9px; flex-wrap:wrap; }
+    .badge { font-size:11px; font-weight:500; padding:2px 9px; border-radius:999px; }
+    .badge-methane { background:var(--teal-dim); color:var(--teal); border:1px solid var(--teal-border); }
+    .badge-ai      { background:var(--blue-dim); color:var(--blue); border:1px solid var(--blue-border); }
+    .badge-texas   { background:var(--amber-dim); color:var(--amber); border:1px solid var(--amber-border); }
+    .badge-grid    { background:var(--orange-dim); color:var(--orange); border:1px solid var(--orange-border); }
+    .badge-clean   { background:var(--green-dim); color:var(--green); border:1px solid var(--green-border); }
+    .badge-oilgas  { background:var(--purple-dim); color:var(--purple); border:1px solid var(--purple-border); }
+    .badge-level { font-size:11px; padding:2px 9px; border-radius:999px; background:rgba(255,255,255,0.04); color:var(--text3); border:1px solid var(--border); }
+    .card-title { font-family:'DM Serif Display',serif; font-size:16px; font-weight:400; color:var(--text); line-height:1.35; margin-bottom:7px; }
+    .card-summary { font-size:13px; color:var(--text2); line-height:1.65; margin-bottom:12px; }
+    .card-footer { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+    .card-source { font-size:12px; color:var(--blue); text-decoration:none; display:flex; align-items:center; gap:4px; }
+    .card-source:hover { text-decoration:underline; }
+    .card-date { font-size:12px; color:var(--text3); }
+
+    /* skeleton */
+    .skeleton { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:18px 20px; margin-bottom:10px; }
+    .skel-line { height:11px; border-radius:6px; background:linear-gradient(90deg,var(--surface2) 0%,rgba(255,255,255,0.04) 50%,var(--surface2) 100%); background-size:200% 100%; animation:shimmer 1.6s infinite; margin-bottom:9px; }
+    @keyframes shimmer { to{background-position:-200% 0} }
+    .empty { text-align:center; padding:50px 20px; }
+    .empty p { font-size:14px; color:var(--text2); line-height:1.7; }
+
+    /* ── SOCIAL TAB ── */
+    .social-intro { font-size:13px; color:var(--text2); line-height:1.7; padding:14px 16px; background:var(--surface); border:1px solid var(--border); border-radius:10px; margin-bottom:28px; }
+    .social-intro strong { color:var(--text); }
+
+    .social-section { margin-bottom:36px; }
+    .social-section-head { display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+    .social-section-head h3 { font-size:13px; font-weight:500; letter-spacing:0.1em; text-transform:uppercase; color:var(--text3); }
+    .social-section-head::after { content:''; flex:1; height:1px; background:var(--border); }
+    .platform-icon { width:28px; height:28px; border-radius:6px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .xi { background:#000; border:1px solid rgba(255,255,255,0.15); }
+    .li { background:#0a66c2; }
+
+    /* search links */
+    .search-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:10px; margin-bottom:20px; }
+    .search-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:14px 16px; text-decoration:none; display:flex; align-items:flex-start; gap:12px; transition:all 0.15s; }
+    .search-card:hover { border-color:var(--border2); background:var(--surface2); transform:translateY(-1px); }
+    .search-card-icon { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:14px; }
+    .search-card-body { flex:1; min-width:0; }
+    .search-card-label { font-size:13px; font-weight:500; color:var(--text); margin-bottom:3px; }
+    .search-card-sub { font-size:12px; color:var(--text2); line-height:1.4; }
+    .search-card-arrow { font-size:16px; color:var(--text3); align-self:center; flex-shrink:0; }
+
+    /* account grid */
+    .account-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:8px; }
+    .account-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:12px 14px; text-decoration:none; display:flex; align-items:center; gap:10px; transition:all 0.15s; }
+    .account-card:hover { border-color:var(--border2); background:var(--surface2); }
+    .account-avatar { width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:500; flex-shrink:0; }
+    .account-info { min-width:0; }
+    .account-handle { font-size:13px; font-weight:500; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .account-desc { font-size:11px; color:var(--text2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .account-tag { font-size:10px; padding:1px 7px; border-radius:999px; margin-top:3px; display:inline-block; }
+
+    /* footer */
+    footer { border-top:1px solid var(--border); padding:28px 0 40px; margin-top:48px; }
+    .footer-grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+    .footer-block h4 { font-size:12px; font-weight:500; letter-spacing:0.1em; text-transform:uppercase; color:var(--text3); margin-bottom:8px; }
+    .footer-block p, .footer-block li { font-size:13px; color:var(--text2); line-height:1.7; }
+    .footer-block ul { list-style:none; }
+    .footer-block ul li::before { content:'→ '; color:var(--text3); }
+    .footer-bottom { margin-top:24px; padding-top:18px; border-top:1px solid var(--border); font-size:12px; color:var(--text3); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+
+    @media(max-width:600px) {
+      header { padding:28px 0 20px; } .masthead { flex-direction:column; } .header-right { align-items:flex-start; }
+      #lastUpdated { text-align:left; } .stats-row { grid-template-columns:1fr 1fr; } .footer-grid { grid-template-columns:1fr; }
+      .nav-tab { padding:8px 12px; font-size:12px; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="masthead">
+      <div class="brand">
+        <div class="brand-eyebrow">Daily Policy Intelligence</div>
+        <h1>Policy <em>Pulse</em></h1>
+        <p class="brand-sub">Energy · Climate · AI · Texas · Power Grid · Oil &amp; Gas</p>
+      </div>
+      <div class="header-right">
+        <span id="lastUpdated">Loading…</span>
+        <button class="refresh-btn" id="refreshBtn" onclick="fetchNews(true)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>
+            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>
+          </svg>
+          Refresh briefing
+        </button>
+      </div>
+    </div>
+
+    <div class="nav-tabs">
+      <div class="nav-tab active" id="tab-news" onclick="switchTab('news')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6Z"/></svg>
+        News Briefing
+      </div>
+      <div class="nav-tab" id="tab-social" onclick="switchTab('social')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Social Media
+      </div>
+    </div>
+  </header>
+
+  <!-- ══ NEWS TAB ══ -->
+  <div class="tab-panel active" id="panel-news">
+    <div class="status-bar">
+      <div class="status-dot dot-loading" id="statusDot"></div>
+      <span id="statusText">Fetching today's policy headlines…</span>
+    </div>
+
+    <div class="stats-row" id="statsRow" style="display:none;">
+      <div class="stat-card"><div class="stat-num" id="statTotal">0</div><div class="stat-label">Total</div></div>
+      <div class="stat-card"><div class="stat-num" id="statMethane" style="color:var(--teal)">0</div><div class="stat-label">Methane</div></div>
+      <div class="stat-card"><div class="stat-num" id="statAI" style="color:var(--blue)">0</div><div class="stat-label">AI / Data</div></div>
+      <div class="stat-card"><div class="stat-num" id="statTexas" style="color:var(--amber)">0</div><div class="stat-label">Texas</div></div>
+      <div class="stat-card"><div class="stat-num" id="statGrid" style="color:var(--orange)">0</div><div class="stat-label">Power Grid</div></div>
+      <div class="stat-card"><div class="stat-num" id="statClean" style="color:var(--green)">0</div><div class="stat-label">Clean Energy</div></div>
+      <div class="stat-card"><div class="stat-num" id="statOilgas" style="color:var(--purple)">0</div><div class="stat-label">Oil &amp; Gas</div></div>
+    </div>
+
+    <div class="filters" id="filtersRow" style="display:none;">
+      <div class="filter-pill f-all active"    onclick="filterTopic('all')"><span class="pdot" style="background:var(--text2)"></span>All</div>
+      <div class="filter-pill f-methane"        onclick="filterTopic('methane')"><span class="pdot" style="background:var(--teal)"></span>Methane</div>
+      <div class="filter-pill f-ai"             onclick="filterTopic('ai')"><span class="pdot" style="background:var(--blue)"></span>AI &amp; Datacenters</div>
+      <div class="filter-pill f-texas"          onclick="filterTopic('texas')"><span class="pdot" style="background:var(--amber)"></span>Texas Energy</div>
+      <div class="filter-pill f-grid"           onclick="filterTopic('grid')"><span class="pdot" style="background:var(--orange)"></span>Power Grid</div>
+      <div class="filter-pill f-clean"          onclick="filterTopic('clean')"><span class="pdot" style="background:var(--green)"></span>Clean Energy</div>
+      <div class="filter-pill f-oilgas"         onclick="filterTopic('oilgas')"><span class="pdot" style="background:var(--purple)"></span>Oil &amp; Gas</div>
+    </div>
+
+    <div id="resultsArea">
+      <div class="skeleton"><div class="skel-line" style="width:28%;margin-bottom:12px"></div><div class="skel-line" style="width:78%;height:15px"></div><div class="skel-line" style="width:92%"></div><div class="skel-line" style="width:55%"></div></div>
+      <div class="skeleton"><div class="skel-line" style="width:22%;margin-bottom:12px"></div><div class="skel-line" style="width:72%;height:15px"></div><div class="skel-line" style="width:85%"></div><div class="skel-line" style="width:48%"></div></div>
+      <div class="skeleton"><div class="skel-line" style="width:25%;margin-bottom:12px"></div><div class="skel-line" style="width:80%;height:15px"></div><div class="skel-line" style="width:70%"></div><div class="skel-line" style="width:60%"></div></div>
+    </div>
+  </div>
+
+  <!-- ══ SOCIAL TAB ══ -->
+  <div class="tab-panel" id="panel-social">
+    <div class="social-intro">
+      <strong>Note:</strong> Twitter/X and LinkedIn don't allow embedding live feeds without paid API access ($100+/mo). These links open live searches and key accounts directly on each platform — the fastest way to see what's being discussed right now.
+    </div>
+
+    <!-- X LIVE SEARCHES -->
+    <div class="social-section">
+      <div class="social-section-head">
+        <div class="platform-icon xi">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        </div>
+        <h3>X (Twitter) — Live searches</h3>
+      </div>
+      <div class="search-grid">
+        <a class="search-card" href="https://x.com/search?q=methane+regulation+OR+EPA+methane&f=live" target="_blank" rel="noopener">
+          <div class="search-card-icon" style="background:var(--teal-dim);border:1px solid var(--teal-border)">🔥</div>
+          <div class="search-card-body"><div class="search-card-label">Methane &amp; EPA</div><div class="search-card-sub">methane regulation OR EPA methane</div></div>
+          <div class="search-card-arrow">↗</div>
+        </a>
+        <a class="search-card" href="https://x.com/search?q=AI+regulation+OR+datacenter+energy+policy&f=live" target="_blank" rel="noopener">
+          <div class="search-card-icon" style="background:var(--blue-dim);border:1px solid var(--blue-border)">🤖</div>
+          <div class="search-card-body"><div class="search-card-label">AI &amp; Datacenter Policy</div><div class="search-card-sub">AI regulation OR datacenter energy policy</div></div>
+          <div class="search-card-arrow">↗</div>
+        </a>
+        <a class="search-card" href="https://x.com/search?q=Texas+energy+OR+ERCOT+OR+Texas+grid&f=live" target="_blank" rel="noopener">
+          <div class="search-card-icon" style="background:var(--amber-dim);border:1px solid var(--amber-border)">⭐</div>
+          <div class="search-card-body"><div class="search-card-label">Texas Energy &amp; ERCOT</div><div class="search-card-sub">Texas energy OR ERCOT OR Texas grid</div></div>
+          <div class="search-card-arrow">↗</div>
+        </a>
+        <a class="search-card" href="https://x.com/search?q=power+grid+reliability+OR+grid+stability+OR+electricity+demand&f=live" target="_blank" rel="noopener">
+          <div class="search-card-icon" style="background:var(--orange-dim);border:1px solid var(--orange-border)">⚡</div>
+          <div class="search-card-body"><div class="search-card-label">Power Grid</div><div class="search-card-sub">power grid reliability OR grid stability</div></div>
+          <div class="search-card-arrow">↗</div>
+        </a>
+        <a class="search-card" href="https://x.com/search?q=clean+energy+policy+OR+solar+wind+legislation+OR+IRA+energy&f=live" target="_blank" rel="noopener">
+          <div class="search-card-icon" style="background:var(--green-dim);border:1px solid var(--green-border)">🌱</div>
+          <div class="search-card-body"><div class="search-card-label">Clean Energy</div><div class="search-card-sub">clean energy policy OR solar wind legislation</div></div>
+          <div class="search-card-arrow">↗</div>
+        </a>
+        <a class="search-card" href="https://x.com/search?q=oil+gas+regulation+OR+LNG+policy+OR+upstream+drilling+regulation&f=live" target="_blank" rel="noopener">
+          <div class="search-card-icon" style="background:var(--purple-dim);border:1px solid var(--purple-border)">🛢</div>
+          <div class="search-card-body"><div class="search-card-label">Oil &amp; Gas</div><div class="search-card-sub">oil gas regulation OR LNG policy</div></div>
+          <div class="search-card-arrow">↗</div>
+        </a>
+        <a class="search-card" href="https://x.com/search?q=climate+policy+OR+carbon+tax+OR+emissions+legislation&f=live" target="_blank" rel="noopener">
+          <div class="search-card-icon" style="background:rgba(100,200,255,0.1);border:1px solid rgba(100,200,255,0.25)">🌍</div>
+          <div class="search-card-body"><div class="search-card-label">Climate Policy</div><div class="search-card-sub">climate policy OR carbon tax OR emissions bill</div></div>
+          <div class="search-card-arrow">↗</div>
+        </a>
+        <a class="search-card" href="https://x.com/search?q=%28ERCOT+OR+Texas+energy%29+%28blackout+OR+demand+OR+capacity%29&f=live" target="_blank" rel="noopener">
+          <div class="search-card-icon" style="background:var(--amber-dim);border:1px solid var(--amber-border)">🔌</div>
+          <div class="search-card-body"><div class="search-card-label">ERCOT Grid Updates</div><div class="search-card-sub">ERCOT blackout OR demand OR capacity</div></div>
+          <div class="search-card-arrow">↗</div>
+        </a>
+      </div>
+    </div>
+
+    <!-- X KEY ACCOUNTS -->
+    <div class="social-section">
+      <div class="social-section-head">
+        <div class="platform-icon xi">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        </div>
+        <h3>X — Key accounts to follow</h3>
+      </div>
+      <div class="account-grid" id="xAccounts"></div>
+    </div>
+
+    <!-- LINKEDIN SEARCHES -->
+    <div class="social-section">
+      <div class="social-section-head">
+        <div class="platform-icon li">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
+        </div>
+        <h3>LinkedIn — Live searches</h3>
+      </div>
+      <div class="search-grid">
+        <a class="search-card" href="https://www.linkedin.com/search/results/content/?keywords=methane%20regulation%20EPA&sortBy=date_posted" target="_blank" rel="noopener">
+          <div class="search-card-icon" style="background:var(--teal-dim);border:1px solid var(--teal-border)">🔥</div>
+          <div class="search-card-body"><div class="search-card-label">Methane &amp; EPA</div><div class="search-card-sub">methane regulation EPA — sorted by recent</div></div>
+          <div class="search-card-arrow">↗</div>
+        </a>
+        <a class="search-card" href="https://www.linkedin.com/search/results/content/?keywords=AI%20regulation%20datacenter%20energy&sortBy=date_posted" target="_blank" rel="noopener">
+          <div class="search-card-icon" style="background:var(--blue-dim);border:1px solid var(--blue-border)">🤖</div>
+          <div class="search-card-body"><div class="search-card-label">AI &amp; Datacenter Policy</div><div class="search-card-sub">AI regulation datacenter energy</div></div>
+          <div class="search-card-arrow">↗</div>
+        </a>
+        <a class="search-card" href="https://www.linkedin.com/search/results/content/?keywords=Texas%20energy%20ERCOT&sortBy=date_posted" target="_blank" rel="noopener">
+          <div class="search-card-icon" style="background:var(--amber-dim);border:1px solid var(--amber-border)">⭐</div>
+          <div class="search-card-body"><div class="search-card-label">Texas Energy &amp; ERCOT</div><div class="search-card-sub">Texas energy ERCOT</div></div>
+          <div class="search-card-arrow">↗</div>
+        </a>
+        <a class="search-card" href="https://www.linkedin.com/search/results/content/?keywords=power%20grid%20reliability%20electricity&sortBy=date_posted" target="_blank" rel="noopener">
+          <div class="search-card-icon" style="background:var(--orange-dim);border:1px solid var(--orange-border)">⚡</div>
+          <div class="search-card-body"><div class="search-card-label">Power Grid</div><div class="search-card-sub">power grid reliability electricity</div></div>
+          <div class="search-card-arrow">↗</div>
+        </a>
+        <a class="search-card" href="https://www.linkedin.com/search/results/content/?keywords=clean%20energy%20solar%20wind%20policy&sortBy=date_posted" target="_blank" rel="noopener">
+          <div class="search-card-icon" style="background:var(--green-dim);border:1px solid var(--green-border)">🌱</div>
+          <div class="search-card-body"><div class="search-card-label">Clean Energy</div><div class="search-card-sub">clean energy solar wind policy</div></div>
+          <div class="search-card-arrow">↗</div>
+        </a>
+        <a class="search-card" href="https://www.linkedin.com/search/results/content/?keywords=oil%20gas%20LNG%20upstream%20policy&sortBy=date_posted" target="_blank" rel="noopener">
+          <div class="search-card-icon" style="background:var(--purple-dim);border:1px solid var(--purple-border)">🛢</div>
+          <div class="search-card-body"><div class="search-card-label">Oil &amp; Gas</div><div class="search-card-sub">oil gas LNG upstream policy</div></div>
+          <div class="search-card-arrow">↗</div>
+        </a>
+        <a class="search-card" href="https://www.linkedin.com/search/results/content/?keywords=climate%20policy%20carbon%20emissions&sortBy=date_posted" target="_blank" rel="noopener">
+          <div class="search-card-icon" style="background:rgba(100,200,255,0.1);border:1px solid rgba(100,200,255,0.25)">🌍</div>
+          <div class="search-card-body"><div class="search-card-label">Climate &amp; Carbon</div><div class="search-card-sub">climate policy carbon emissions</div></div>
+          <div class="search-card-arrow">↗</div>
+        </a>
+        <a class="search-card" href="https://www.linkedin.com/search/results/content/?keywords=energy%20transition%20decarbonization&sortBy=date_posted" target="_blank" rel="noopener">
+          <div class="search-card-icon" style="background:var(--green-dim);border:1px solid var(--green-border)">♻</div>
+          <div class="search-card-body"><div class="search-card-label">Energy Transition</div><div class="search-card-sub">energy transition decarbonization</div></div>
+          <div class="search-card-arrow">↗</div>
+        </a>
+      </div>
+    </div>
+
+    <!-- LINKEDIN KEY ACCOUNTS -->
+    <div class="social-section">
+      <div class="social-section-head">
+        <div class="platform-icon li">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
+        </div>
+        <h3>LinkedIn — Key accounts &amp; pages</h3>
+      </div>
+      <div class="account-grid" id="liAccounts"></div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <footer>
+    <div class="footer-grid">
+      <div class="footer-block">
+        <h4>About Policy Pulse</h4>
+        <p>Uses Claude AI with live web search to surface current federal, state, and Texas-specific actions across energy, climate, AI, and oil &amp; gas. Auto-fetches on load, caches 3 hours.</p>
+      </div>
+      <div class="footer-block">
+        <h4>Push notifications</h4>
+        <ul>
+          <li>Sign up at <strong>make.com</strong> (free)</li>
+          <li>Schedule a daily trigger at your preferred time</li>
+          <li>Add a web search step for policy keywords</li>
+          <li>Push to phone via <strong>ntfy.sh</strong> or <strong>Pushover</strong></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>Policy Pulse · Powered by Claude AI</span>
+      <span id="footerDate"></span>
+    </div>
+  </footer>
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────
+
+const X_ACCOUNTS = [
+  { handle:'@EPA', name:'U.S. EPA', desc:'Official federal environmental agency', tag:'Methane', tagColor:'teal', url:'https://x.com/EPA' },
+  { handle:'@ERCOT_ISO', name:'ERCOT', desc:'Texas grid operator', tag:'Texas Grid', tagColor:'amber', url:'https://x.com/ERCOT_ISO' },
+  { handle:'@EIAgov', name:'U.S. Energy Info Admin', desc:'Energy data & analysis', tag:'Energy', tagColor:'orange', url:'https://x.com/EIAgov' },
+  { handle:'@FERC', name:'FERC', desc:'Federal energy regulator', tag:'Grid', tagColor:'orange', url:'https://x.com/FERC' },
+  { handle:'@DOEGovNews', name:'Dept of Energy', desc:'Federal energy policy', tag:'Clean Energy', tagColor:'green', url:'https://x.com/ENERGY' },
+  { handle:'@CarbonBrief', name:'Carbon Brief', desc:'Climate science & policy', tag:'Climate', tagColor:'green', url:'https://x.com/CarbonBrief' },
+  { handle:'@BloombergNEF', name:'BloombergNEF', desc:'Clean energy research', tag:'Clean Energy', tagColor:'green', url:'https://x.com/BloombergNEF' },
+  { handle:'@EnergyInDepth', name:'Energy In Depth', desc:'Oil & gas industry news', tag:'Oil & Gas', tagColor:'purple', url:'https://x.com/EnergyInDepth' },
+  { handle:'@TexasTribune', name:'Texas Tribune', desc:'Texas policy journalism', tag:'Texas', tagColor:'amber', url:'https://x.com/TexasTribune' },
+  { handle:'@AIPolicy', name:'AI Policy Hub', desc:'AI governance & regulation', tag:'AI', tagColor:'blue', url:'https://x.com/AIPolicy' },
+  { handle:'@GreenTechMedia', name:'Wood Mackenzie', desc:'Energy market intelligence', tag:'Energy', tagColor:'orange', url:'https://x.com/woodmac' },
+  { handle:'@climatepolicy', name:'Climate Policy Initiative', desc:'Climate finance & policy', tag:'Climate', tagColor:'green', url:'https://x.com/climatepolicy' },
+  { handle:'@NatGasIntel', name:'Natural Gas Intel', desc:'Natural gas market news', tag:'Methane', tagColor:'teal', url:'https://x.com/NatGasIntel' },
+  { handle:'@NERC_alerts', name:'NERC', desc:'Grid reliability standards', tag:'Grid', tagColor:'orange', url:'https://x.com/NERC_alerts' },
+  { handle:'@RRC_TX', name:'TX Railroad Commission', desc:'Texas oil & gas regulator', tag:'Texas/O&G', tagColor:'amber', url:'https://x.com/RRC_TX' },
+  { handle:'@SEIA', name:'SEIA', desc:'Solar energy industry assoc.', tag:'Clean Energy', tagColor:'green', url:'https://x.com/SEIA' },
+];
+
+const LI_ACCOUNTS = [
+  { name:'U.S. EPA', desc:'Environmental Protection Agency', tag:'Methane', tagColor:'teal', url:'https://www.linkedin.com/company/epa' },
+  { name:'Dept. of Energy', desc:'Federal clean energy policy', tag:'Energy', tagColor:'orange', url:'https://www.linkedin.com/company/department-of-energy' },
+  { name:'ERCOT', desc:'Texas electricity grid operator', tag:'Texas Grid', tagColor:'amber', url:'https://www.linkedin.com/company/ercot' },
+  { name:'BloombergNEF', desc:'New energy finance research', tag:'Clean Energy', tagColor:'green', url:'https://www.linkedin.com/company/bloombergnef' },
+  { name:'Wood Mackenzie', desc:'Energy market intelligence', tag:'Energy', tagColor:'orange', url:'https://www.linkedin.com/company/wood-mackenzie' },
+  { name:'S&P Global Commodity', desc:'Oil, gas & energy data', tag:'Oil & Gas', tagColor:'purple', url:'https://www.linkedin.com/company/s-p-global-commodity-insights' },
+  { name:'RMI', desc:'Rocky Mtn Institute — clean energy', tag:'Climate', tagColor:'green', url:'https://www.linkedin.com/company/rocky-mountain-institute' },
+  { name:'Carbon Tracker', desc:'Climate finance & risk', tag:'Climate', tagColor:'green', url:'https://www.linkedin.com/company/carbon-tracker-initiative' },
+  { name:'API', desc:'American Petroleum Institute', tag:'Oil & Gas', tagColor:'purple', url:'https://www.linkedin.com/company/american-petroleum-institute' },
+  { name:'Clean Air Task Force', desc:'Methane & emissions policy', tag:'Methane', tagColor:'teal', url:'https://www.linkedin.com/company/clean-air-task-force' },
+  { name:'Center for AI Safety', desc:'AI governance & policy', tag:'AI', tagColor:'blue', url:'https://www.linkedin.com/company/center-for-ai-safety' },
+  { name:'Texas Tribune', desc:'Texas policy & politics', tag:'Texas', tagColor:'amber', url:'https://www.linkedin.com/company/texas-tribune' },
+];
+
+const TAG_COLORS = { teal:'var(--teal)', blue:'var(--blue)', amber:'var(--amber)', orange:'var(--orange)', green:'var(--green)', purple:'var(--purple)' };
+const TAG_BG = { teal:'var(--teal-dim)', blue:'var(--blue-dim)', amber:'var(--amber-dim)', orange:'var(--orange-dim)', green:'var(--green-dim)', purple:'var(--purple-dim)' };
+
+const TOPIC_META = {
+  methane: { label:'Methane', badge:'badge-methane', color:'var(--teal)' },
+  ai:      { label:'AI / Datacenters', badge:'badge-ai', color:'var(--blue)' },
+  texas:   { label:'Texas Energy', badge:'badge-texas', color:'var(--amber)' },
+  grid:    { label:'Power Grid', badge:'badge-grid', color:'var(--orange)' },
+  clean:   { label:'Clean Energy', badge:'badge-clean', color:'var(--green)' },
+  oilgas:  { label:'Oil & Gas', badge:'badge-oilgas', color:'var(--purple)' },
+};
+
+// ── RENDER SOCIAL ACCOUNTS ────────────────────────────────────────────────
+
+function initials(name) { return name.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase(); }
+
+function renderAccounts() {
+  const xEl = document.getElementById('xAccounts');
+  xEl.innerHTML = X_ACCOUNTS.map(a => `
+    <a class="account-card" href="${a.url}" target="_blank" rel="noopener">
+      <div class="account-avatar" style="background:${TAG_BG[a.tagColor]};color:${TAG_COLORS[a.tagColor]}">${initials(a.name)}</div>
+      <div class="account-info">
+        <div class="account-handle">${a.handle}</div>
+        <div class="account-desc">${a.desc}</div>
+        <span class="account-tag" style="background:${TAG_BG[a.tagColor]};color:${TAG_COLORS[a.tagColor]}">${a.tag}</span>
+      </div>
+    </a>`).join('');
+
+  const liEl = document.getElementById('liAccounts');
+  liEl.innerHTML = LI_ACCOUNTS.map(a => `
+    <a class="account-card" href="${a.url}" target="_blank" rel="noopener">
+      <div class="account-avatar" style="background:${TAG_BG[a.tagColor]};color:${TAG_COLORS[a.tagColor]}">${initials(a.name)}</div>
+      <div class="account-info">
+        <div class="account-handle">${a.name}</div>
+        <div class="account-desc">${a.desc}</div>
+        <span class="account-tag" style="background:${TAG_BG[a.tagColor]};color:${TAG_COLORS[a.tagColor]}">${a.tag}</span>
+      </div>
+    </a>`).join('');
+}
+
+// ── TABS ──────────────────────────────────────────────────────────────────
+
+function switchTab(tab) {
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  document.getElementById('panel-' + tab).classList.add('active');
+  document.getElementById('refreshBtn').style.display = tab === 'news' ? '' : 'none';
+  document.getElementById('lastUpdated').style.display = tab === 'news' ? '' : 'none';
+}
+
+// ── NEWS ──────────────────────────────────────────────────────────────────
+
+let allArticles = [];
+let currentFilter = 'all';
+const CACHE_KEY = 'policypulse_v7';
+const CACHE_TTL = 3 * 60 * 60 * 1000;
+
+document.getElementById('footerDate').textContent = new Date().toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+function setStatus(type, text) {
+  document.getElementById('statusDot').className = 'status-dot dot-' + type;
+  document.getElementById('statusText').textContent = text;
+}
+
+function filterTopic(topic) {
+  currentFilter = topic;
+  document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+  document.querySelector('.filter-pill.f-' + (topic === 'all' ? 'all' : topic)).classList.add('active');
+  renderArticles();
+}
+
+function cardHTML(a, delay) {
+  const meta = TOPIC_META[a.topic] || TOPIC_META.methane;
+  const sourceEl = a.url
+    ? `<a class="card-source" href="${a.url}" target="_blank" rel="noopener">
+         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+         ${a.source}</a>`
+    : `<span class="card-date">${a.source}</span>`;
+  return `<div class="card" style="animation-delay:${delay*55}ms">
+    <div class="card-top">
+      <span class="badge ${meta.badge}">${meta.label}</span>
+      <span class="badge-level">${a.level}</span>
+    </div>
+    <div class="card-title">${a.title}</div>
+    <div class="card-summary">${a.summary}</div>
+    <div class="card-footer">${sourceEl}<span class="card-date">${a.date}</span></div>
+  </div>`;
+}
+
+function renderArticles() {
+  const area = document.getElementById('resultsArea');
+  if (!allArticles.length) return;
+  const filtered = currentFilter === 'all' ? allArticles : allArticles.filter(a => a.topic === currentFilter);
+  if (!filtered.length) { area.innerHTML = '<div class="empty"><p>No headlines found for this topic today.</p></div>'; return; }
+
+  const groups = {};
+  filtered.forEach(a => { if (!groups[a.topic]) groups[a.topic] = []; groups[a.topic].push(a); });
+
+  let html = '';
+  let i = 0;
+  const order = ['methane','ai','texas','grid','clean','oilgas'];
+  order.forEach(topic => {
+    if (!groups[topic]) return;
+    const meta = TOPIC_META[topic];
+    html += `<div class="section-label" style="color:${meta.color}">${meta.label}</div>`;
+    html += groups[topic].map(a => cardHTML(a, i++)).join('');
+  });
+  area.innerHTML = html;
+}
+
+function updateStats(articles) {
+  document.getElementById('statTotal').textContent = articles.length;
+  ['methane','ai','texas','grid','clean','oilgas'].forEach(t => {
+    const el = document.getElementById('stat' + t.charAt(0).toUpperCase() + t.slice(1));
+    if (el) el.textContent = articles.filter(a => a.topic === t).length;
+  });
+  document.getElementById('statsRow').style.display = 'grid';
+  document.getElementById('filtersRow').style.display = 'flex';
+}
+
+async function fetchNews(forceRefresh) {
+  if (!forceRefresh) {
+    try {
+      const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+      if (cached && (Date.now() - cached.ts < CACHE_TTL) && cached.articles.length) {
+        allArticles = cached.articles;
+        updateStats(allArticles);
+        renderArticles();
+        const ago = Math.round((Date.now() - cached.ts) / 60000);
+        setStatus('ready', `Cached briefing from ${ago} min ago — click Refresh for latest`);
+        document.getElementById('lastUpdated').textContent = 'Cached: ' + new Date(cached.ts).toLocaleTimeString();
+        return;
+      }
+    } catch(e) {}
+  }
+
+  const btn = document.getElementById('refreshBtn');
+  btn.disabled = true;
+  btn.classList.add('spinning');
+  setStatus('loading', 'Searching for today\'s policy headlines across all topics…');
+  document.getElementById('lastUpdated').textContent = 'Fetching…';
+
+  try {
+    const resp = await fetch('/.netlify/functions/fetch-news');
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.error || `Server returned ${resp.status}`);
+    }
+    const articles = await resp.json();
+    allArticles = Array.isArray(articles) ? articles : [];
+
+    if (allArticles.length) {
+      try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), articles: allArticles })); } catch(e) {}
+    }
+
+    const now = new Date();
+    document.getElementById('lastUpdated').textContent = 'Updated: ' + now.toLocaleTimeString();
+    updateStats(allArticles);
+
+    if (!allArticles.length) {
+      setStatus('ready', 'No major policy headlines found in the past 48 hours');
+      document.getElementById('resultsArea').innerHTML = '<div class="empty"><p>No major policy activity found today.<br>Check back tomorrow or click Refresh.</p></div>';
+      document.getElementById('statsRow').style.display = 'none';
+    } else {
+      setStatus('ready', `Found ${allArticles.length} headline${allArticles.length !== 1 ? 's' : ''} · ${now.toLocaleTimeString()}`);
+      renderArticles();
+    }
+  } catch(err) {
+    setStatus('error', 'Could not fetch headlines — ' + (err.message || 'unknown error'));
+    document.getElementById('lastUpdated').textContent = 'Fetch failed';
+    document.getElementById('resultsArea').innerHTML = `<div class="empty"><p>Something went wrong.<br><span style="color:var(--red);font-size:12px;">${err.message}</span><br><br>Click Refresh to try again.</p></div>`;
+  }
+
+  btn.disabled = false;
+  btn.classList.remove('spinning');
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+renderAccounts();
+fetchNews(false);
+</script>
+</body>
+</html>
